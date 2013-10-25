@@ -7,7 +7,7 @@
 (function ($, window, undefined) {
 	// Create the defaults once
 	var elementFactory = function (element, value) {
-		element.text(value.val);
+		element.text(value[this.options.key]);
 	};
 
 	var pluginName = 'sew',
@@ -15,6 +15,8 @@
 			token: '@',
 			elementFactory: elementFactory,
 			values: [],
+			key: 'val',
+			meta: 'meta',
 			unique: false,
 			repeat: true
 		};
@@ -54,7 +56,7 @@
 
 	Plugin.prototype.reset = function () {
 		if(this.options.unique) {
-			this.options.values = Plugin.getUniqueElements(this.options.values);
+			this.options.values = Plugin.getUniqueElements(this.options.values, this.options.key);
 		}
 
 		this.index = 0;
@@ -75,7 +77,7 @@
 	};
 
 	Plugin.prototype.select = function () {
-		this.replace(this.filtered[this.index].val);
+		this.replace(this.filtered[this.index][this.options.key]);
 		this.$element.trigger('mention-selected',this.filtered[this.index]);
 		this.hideList();
 	};
@@ -157,14 +159,15 @@
 
 
 		var vals = this.filtered = values.filter($.proxy(function (e) {
-			var exp = new RegExp('\\W*' + this.options.token + e.val + '(\\W|$)');
+			var exp = new RegExp('\\W*' + this.options.token + e[this.options.key] + '(\\W|$)');
 			if(!this.options.repeat && this.getText().match(exp)) {
 				return false;
 			}
 
+			
 			return	val === "" ||
-							e.val.toLowerCase().indexOf(val.toLowerCase()) >= 0 ||
-							(e.meta || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
+							e[this.options.key].toLowerCase().indexOf(val.toLowerCase()) >= 0 ||
+							(e[this.options.meta] || "").toLowerCase().indexOf(val.toLowerCase()) >= 0;
 		}, this));
 
 		if(vals.length) {
@@ -175,11 +178,10 @@
 		}
 	};
 
-	Plugin.getUniqueElements = function (elements) {
-		var target = [];
-
+	Plugin.getUniqueElements = function (elements, key) {
+		var target = [];				
 		elements.forEach(function (e) {
-			var hasElement = target.map(function (j) { return j.val; }).indexOf(e.val) >= 0;
+			var hasElement = target.map(function (j) { return j[key]; }).indexOf(e[key]) >= 0;
 			if(hasElement) return;
 			target.push(e);
 		});
@@ -249,7 +251,7 @@
 	Plugin.prototype.onItemClick = function (element, e) {
 		if(this.cleanupHandle) window.clearTimeout(this.cleanupHandle);
 
-		this.replace(element.val);
+		this.replace(element[this.options.key]);
 		this.$element.trigger('mention-selected',this.filtered[this.index]);
 		this.hideList();
 	};
